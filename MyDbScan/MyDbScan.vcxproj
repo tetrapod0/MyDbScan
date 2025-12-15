@@ -98,7 +98,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>D:\ZSDK\opencv-4.12.0\build\include;D:\ZSDK\opencv-4.12.0\build\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\ZSDK\opencv-4.12.0\build\include;D:\ZSDK\opencv-4.12.0\build\include\opencv2;D:\ZSDK\eigen-3.4.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -175,7 +175,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>D:\ZSDK\opencv-4.12.0\build\include;D:\ZSDK\opencv-4.12.0\build\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\ZSDK\opencv-4.12.0\build\include;D:\ZSDK\opencv-4.12.0\build\include\opencv2;D:\ZSDK\eigen-3.4.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -197,7 +197,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CImageStatic.h" />
+    <ClInclude Include="DBSCAN.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="ImageProcess.h" />
     <ClInclude Include="MyDbScan.h" />
     <ClInclude Include="MyDbScanDlg.h" />
     <ClInclude Include="pch.h" />
@@ -206,6 +208,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CImageStatic.cpp" />
+    <ClCompile Include="DBSCAN.cpp" />
+    <ClCompile Include="ImageProcess.cpp" />
     <ClCompile Include="MyDbScan.cpp" />
     <ClCompile Include="MyDbScanDlg.cpp" />
     <ClCompile Include="pch.cpp">

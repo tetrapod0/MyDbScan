@@ -54,4 +54,5 @@ private:
 public:
 	afx_msg void OnBnClickedMainLoadImgBtn ( );
 	afx_msg void OnHScroll ( UINT nSBCode , UINT nPos , CScrollBar* pScrollBar );
+	afx_msg void OnBnClickedMainDoBtn ( );
 };
