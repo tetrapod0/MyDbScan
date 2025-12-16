@@ -15,8 +15,7 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 	int iDim = matData.cols;
 
 
-	std::vector<std::unordered_map<int , int>> vecMapIdxToVecIdx ( iDim ); // vec[dim] -> map[origin_idx] -> sorted_idx
-	std::vector<std::unordered_map<int , int>> vecMapIdxToVecIdxInverse ( iDim ); // vec[dim] -> map[sorted_idx] -> origin_idx
+	std::vector<std::unordered_map<int , int>> vecMapSortedIdxToOriginIdx ( iDim ); // vec[dim] -> map[sorted_idx] -> origin_idx
 
 	std::vector<std::vector<double>> vecVecData ( iDim ); // vec[dim] -> vec[sorted_idx] -> value
 
@@ -37,15 +36,14 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 		);
 
 		// 맵 및 데이터 벡터 생성
+		vecVecData[ i ].resize ( iNumPoints );
 		for ( int j = 0; j < iNumPoints; ++j )
 		{
-			vecMapIdxToVecIdx[ i ][ vecPairIdxValueTemp[ j ].first ] = j;
-			vecMapIdxToVecIdxInverse[ i ][ j ] = vecPairIdxValueTemp[ j ].first;
-			vecVecData[ i ].push_back ( vecPairIdxValueTemp[ j ].second );
+			vecMapSortedIdxToOriginIdx[ i ][ j ] = vecPairIdxValueTemp[ j ].first;
+			vecVecData[ i ][ j ] = vecPairIdxValueTemp[ j ].second;
 		}
 	}
 
-	// 접근 예시 : vecMapIdxToVecIdx[dim][0] -> 3 -> vecVecData[dim][3] -> 1.23  :  matData[0, dim] = 1.23
 
 
 	int iClusterId = 0;
@@ -95,7 +93,7 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 				for ( auto it = itLower; it != itUpper; ++it )
 				{
 					int idx = static_cast< int >( std::distance ( vecData.begin ( ) , it ) );
-					int originIdx = vecMapIdxToVecIdxInverse[ dim ][ idx ];
+					int originIdx = vecMapSortedIdxToOriginIdx[ dim ][ idx ];
 					setCandidateTemp.insert ( originIdx );
 				}
 
