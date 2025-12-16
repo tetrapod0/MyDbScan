@@ -10,6 +10,9 @@
 
 #include <vector>
 
+#include "DBSCAN.h"
+#include "MyUtils/MyCsv.hpp"
+
 
 
 // CMyDbScanDlg 대화 상자

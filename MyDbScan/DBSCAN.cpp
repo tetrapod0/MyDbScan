@@ -1,30 +1,33 @@
-﻿#include "DBSCAN.h"
-#include "pch.h"
+﻿#include "pch.h"
+#include "DBSCAN.h"
 
 
-// matxData  : (N, dim)
+// matData  : (N, dim)
 // vecLabels : (N, )
-void DBSCAN::fit ( const Eigen::MatrixXd& matxData , std::vector<int>& vecLabels )
+void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 {
+	//CV_Assert ( matData.type ( ) == CV_32F || matData.type ( ) == CV_64F );
+
 	// 라벨 초기화
-	vecLabels.resize ( matxData.rows ( ) , -1 ); // -1: noise
+	vecLabels.resize ( matData.rows , -1 ); // -1: noise
 
-	int iNumPoints = static_cast< int >( matxData.rows ( ) );
-	int iDim = static_cast< int >( matxData.cols ( ) );
+	int iNumPoints = matData.rows;
+	int iDim = matData.cols;
 
 
-	std::vector<std::map<int , int>> vecMapIdxToVecIdx ( iDim ); // vec[dim] -> map[N] -> N
+	std::vector<std::unordered_map<int , int>> vecMapIdxToVecIdx ( iDim ); // vec[dim] -> map[origin_idx] -> sorted_idx
+	std::vector<std::unordered_map<int , int>> vecMapIdxToVecIdxInverse ( iDim ); // vec[dim] -> map[sorted_idx] -> origin_idx
 
-	std::vector<std::vector<double>> vecVecData ( iDim ); // vec[dim] -> vec[N] -> value
+	std::vector<std::vector<double>> vecVecData ( iDim ); // vec[dim] -> vec[sorted_idx] -> value
 
-	std::vector<std::pair<int , double>> vecPairIdxValueTemp ( iNumPoints ); // vec[N] -> pair<idx, value>
+	std::vector<std::pair<int , double>> vecPairIdxValueTemp ( iNumPoints ); // vec[sorted_idx] -> pair<origin_idx, value>
 	
 	for (int i = 0; i < iDim; ++i)
 	{
 		// 정렬용 임시 벡터 생성
 		for ( int j = 0; j < iNumPoints; ++j )
 		{
-			vecPairIdxValueTemp[ j ] = std::make_pair ( j , matxData ( j , i ) );
+			vecPairIdxValueTemp[ j ] = std::make_pair ( j , matData.at<double> ( j , i ) );
 		}
 
 		// 정렬
@@ -37,14 +40,121 @@ void DBSCAN::fit ( const Eigen::MatrixXd& matxData , std::vector<int>& vecLabels
 		for ( int j = 0; j < iNumPoints; ++j )
 		{
 			vecMapIdxToVecIdx[ i ][ vecPairIdxValueTemp[ j ].first ] = j;
+			vecMapIdxToVecIdxInverse[ i ][ j ] = vecPairIdxValueTemp[ j ].first;
 			vecVecData[ i ].push_back ( vecPairIdxValueTemp[ j ].second );
 		}
 	}
 
-	// 접근 예시 : vecMapIdxToVecIdx[dim][0] -> 3 -> vecVecData[dim][3] -> 1.23
+	// 접근 예시 : vecMapIdxToVecIdx[dim][0] -> 3 -> vecVecData[dim][3] -> 1.23  :  matData[0, dim] = 1.23
 
 
+	int iClusterId = 0;
+	int iNextIdx = 0;
+	std::queue<int> queueIdx;
 
+	while ( iNextIdx < iNumPoints )
+	{
+		// 이미 라벨링된 포인트는 건너뜀
+		if ( vecLabels[ iNextIdx ] != -1 )
+		{
+			++iNextIdx;
+			continue;
+		}
+
+		// 클러스터 집합 크기
+		int iClusterSize = 0;
+
+		// 새로운 클러스터 시작
+		queueIdx.push ( iNextIdx );
+
+		// BFS로 클러스터 확장
+		while ( queueIdx.empty ( ) == false )
+		{
+			// 현재 포인트 인덱스
+			int iCurrentIdx = queueIdx.front ( );
+			queueIdx.pop ( );
+
+			// 현재 포인트의 이웃 찾기
+			std::set<int> setCandidate; // 후보 이웃 인덱스 교집합
+			for ( int dim = 0; dim < iDim; ++dim )
+			{
+				// 각 차원별로 이웃 인덱스 찾기
+				std::set<int> setCandidateTemp;
+
+				// 현재 포인트의 값
+				double dValue = matData.at<double> ( iCurrentIdx , dim );
+
+				// 현재 차원에서 이웃 범위 계산
+				double dLowerBound = dValue - m_eps;
+				double dUpperBound = dValue + m_eps;
+
+				// 정렬된 데이터에서 이웃 인덱스 찾기
+				auto& vecData = vecVecData[ dim ];
+				auto itLower = std::lower_bound ( vecData.begin ( ) , vecData.end ( ) , dLowerBound );
+				auto itUpper = std::upper_bound ( vecData.begin ( ) , vecData.end ( ) , dUpperBound );
+				for ( auto it = itLower; it != itUpper; ++it )
+				{
+					int idx = static_cast< int >( std::distance ( vecData.begin ( ) , it ) );
+					int originIdx = vecMapIdxToVecIdxInverse[ dim ][ idx ];
+					setCandidateTemp.insert ( originIdx );
+				}
+
+				// 교집합 갱신
+				if ( dim == 0 )
+				{
+					setCandidate = setCandidateTemp;
+				}
+				else
+				{
+					std::set<int> setIntersection;
+					std::set_intersection ( setCandidate.begin ( ) , setCandidate.end ( ) ,
+						setCandidateTemp.begin ( ) , setCandidateTemp.end ( ) ,
+						std::inserter ( setIntersection , setIntersection.begin ( ) )
+					);
+					setCandidate = setIntersection;
+				}
+			}
+
+			// 이웃 후보 실제 거리 계산 및 필터링
+			std::vector<int> vecNeighbors;
+			for ( int idx : setCandidate )
+			{
+				// 유클리드 거리 계산
+				double dDist = 0.0;
+				cv::Mat matPtCurrent = matData.row ( iCurrentIdx );
+				cv::Mat matPtCandidate = matData.row ( idx );
+				dDist = cv::norm ( matPtCurrent - matPtCandidate , cv::NORM_L2 );
+				if ( dDist <= m_eps )
+					vecNeighbors.push_back ( idx );
+			}
+
+			// 충분한 이웃이 있는지 확인
+			if ( vecNeighbors.size ( ) >= m_minPts )
+			{
+				// 클러스터 라벨링
+				for ( int neighborIdx : vecNeighbors )
+				{
+					if ( vecLabels[ neighborIdx ] == -1 )
+					{
+						vecLabels[ neighborIdx ] = iClusterId;
+						++iClusterSize;
+						if ( neighborIdx != iCurrentIdx )
+							queueIdx.push ( neighborIdx ); // 새로운 포인트 추가
+					}
+				}
+			}
+
+
+		} // while ( queueIdx.empty ( ) == false )
+
+		// 다음 클러스터로 이동
+		if ( iClusterSize >= m_minPts )
+			++iClusterId;
+
+		// 다음 포인트
+		++iNextIdx;
+
+	} // while ( iNextIdx < iNumPoints )
 
 
 

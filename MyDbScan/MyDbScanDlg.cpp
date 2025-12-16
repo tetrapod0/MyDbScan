@@ -17,6 +17,45 @@
 
 
 
+// openCV 로그 레벨 설정
+#if 1
+#include "opencv2/core/utils/logger.hpp"
+struct CvSetSlientLogLevel {
+	CvSetSlientLogLevel ( ) {
+		cv::utils::logging::setLogLevel ( cv::utils::logging::LOG_LEVEL_SILENT ); // 또는 LOG_LEVEL_ERROR
+	}
+};
+CvSetSlientLogLevel cv_set_slient_log_level; // 전역 객체로 생성하여 main() 전에 실행되도록 함
+#endif
+
+
+// 콘솔창 사용
+#if defined(SHOW_CONSOLE_LOG) && SHOW_CONSOLE_LOG == 1
+
+#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")
+
+// 속성 - 구성 속성 - C/C++ - 명령줄 - 추가옵션 - /utf-8 일 때 사용
+// 콘솔을 CP949 -> UTF-8로 변경
+#if defined(_MSVC_EXECUTION_CHARACTER_SET) && _MSVC_EXECUTION_CHARACTER_SET == 65001
+#include <windows.h>
+
+struct ConsoleUTF8Initializer {
+	ConsoleUTF8Initializer ( ) {
+		SetConsoleOutputCP ( CP_UTF8 );
+		SetConsoleCP ( CP_UTF8 );
+	}
+};
+
+ConsoleUTF8Initializer console_utf8_init;
+#endif
+
+#endif // SHOW_CONSOLE_LOG
+
+
+
+
+
+
 CMyDbScanDlg::CMyDbScanDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MYDBSCAN_DIALOG, pParent)
 {
@@ -219,6 +258,78 @@ void CMyDbScanDlg::OnBnClickedMainDoBtn ( )
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
+	Dbscan dbscan (
+		static_cast< double >( this->GetDlgItemInt ( IDC_MAIN_EPS_STATIC ) ) ,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC ) )
+	);
+
+	// 데이터 준비
+	cv::Mat matData;
+	std::vector<int> vecLabels;
+
+
+	MyUtils::MyCsv csv;
+	std::vector < std::vector < std::string >> vecData;
+	csv.load ( "./data.csv" , vecData );
+
+
+	matData = cv::Mat ( static_cast< int >( vecData.size ( ) - 1 ) , 2 , CV_64F );
+	for ( size_t i = 1; i < vecData.size ( ); ++i )
+	{
+		matData.at<double> ( static_cast< int >( i - 1 ) , 0 ) = std::stod ( vecData[ i ][ 0 ] );
+		matData.at<double> ( static_cast< int >( i - 1 ) , 1 ) = std::stod ( vecData[ i ][ 1 ] );
+	}
+
+
+
+	// matData 0 ~ 100 사이로 정규화
+	cv::Mat matDataNorm;
+	//cv::normalize ( matData , matDataNorm , 0.0 , 100.0 , cv::NORM_MINMAX );
+
+	matDataNorm.create ( matData.rows , matData.cols , matData.type ( ) );
+
+	for ( int c = 0; c < matData.cols; ++c )
+	{
+		cv::Mat col = matData.col ( c );
+		cv::Mat colNorm = matDataNorm.col ( c );
+		cv::normalize ( col , colNorm , 0.0 , 99.0 , cv::NORM_MINMAX );
+	}
+
+	// matDataNorm 을 int 형으로 변환
+	matDataNorm.convertTo ( matDataNorm , CV_32S );
+
+
+
+
+	// 클러스터링 수행
+	dbscan.fit ( matDataNorm , vecLabels );
+
+
+	m_matList[ _SCATTER ] = cv::Mat ( 100 , 100 , CV_8UC3 , cv::Scalar ( 255 , 255 , 255 ) );
+
+	// 결과 그리기
+	for ( int i = 0; i < matDataNorm.rows; ++i )
+	{
+		int x = matDataNorm.at<int> ( i , 0 );
+		int y = matDataNorm.at<int> ( i , 1 );
+		int label = vecLabels[ i ];
+
+		cv::Scalar color;
+		if ( label == 0 )
+			color = cv::Scalar ( 255 , 0 , 0 ); // 클러스터 0 : 파란색
+		else if ( label == 1 )
+			color = cv::Scalar ( 0 , 255 , 0 ); // 클러스터 1 : 초록색
+		else if ( label == 2 )
+			color = cv::Scalar ( 0 , 0 , 255 ); // 클러스터 2 : 빨간색
+		else
+			color = cv::Scalar ( 0 , 0 , 0 );   // 노이즈 : 검은색
+
+		// 점 그리기
+		cv::circle ( m_matList[ _SCATTER ] , cv::Point ( x , y ) , 0 , color , -1 );
+	}
+
+	m_imgStaticScatter.bridgeImage ( &m_matList[ _SCATTER ] );
+	m_imgStaticScatter.Invalidate ( TRUE );
 
 
 }
