@@ -98,31 +98,49 @@ BOOL CMyDbScanDlg::OnInitDialog()
 	{
 		CSliderCtrl* pSlider;
 
+		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_X_SLIDER ) );
+		pSlider->SetRange ( 0 , 1000 );
+		pSlider->SetTicFreq ( 1 );
+		pSlider->SetPos ( 514 );
+
+		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_Y_SLIDER ) );
+		pSlider->SetRange ( 0 , 1000 );
+		pSlider->SetTicFreq ( 1 );
+		pSlider->SetPos ( 480 );
+
+		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_R_SLIDER ) );
+		pSlider->SetRange ( 0 , 1000 );
+		pSlider->SetTicFreq ( 1 );
+		pSlider->SetPos ( 392 );
+
 		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_EPS_SLIDER ) );
 		pSlider->SetRange ( 0 , 100 );
 		pSlider->SetTicFreq ( 1 );
-		pSlider->SetPos ( 0 );
+		pSlider->SetPos ( 9 );
 
 		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_MIN_SAMPLES_SLIDER ) );
 		pSlider->SetRange ( 0 , 1000 );
 		pSlider->SetTicFreq ( 1 );
-		pSlider->SetPos ( 0 );
+		pSlider->SetPos ( 50 );
 
 		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_HSV_S_THRESH_SLIDER ) );
 		pSlider->SetRange ( 0 , 255 );
 		pSlider->SetTicFreq ( 1 );
-		pSlider->SetPos ( 0 );
+		pSlider->SetPos ( 80 );
 
 		pSlider = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_HSV_V_THRESH_SLIDER ) );
 		pSlider->SetRange ( 0 , 255 );
 		pSlider->SetTicFreq ( 1 );
-		pSlider->SetPos ( 0 );
+		pSlider->SetPos ( 68 );
 
 		// 초기값 설정
-		this->SetDlgItemInt ( IDC_MAIN_EPS_STATIC , 0 );
-		this->SetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC , 0 );
-		this->SetDlgItemInt ( IDC_MAIN_HSV_S_THRESH_STATIC , 0 );
-		this->SetDlgItemInt ( IDC_MAIN_HSV_V_THRESH_STATIC , 0 );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_X_STATIC , 514 );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_Y_STATIC , 480 );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_R_STATIC , 392 );
+		this->SetDlgItemInt ( IDC_MAIN_EPS_STATIC , 9 );
+		this->SetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC , 50 );
+		this->SetDlgItemInt ( IDC_MAIN_HSV_S_THRESH_STATIC , 80 );
+		this->SetDlgItemInt ( IDC_MAIN_HSV_V_THRESH_STATIC , 68 );
 	}
 
 
@@ -176,9 +194,9 @@ void CMyDbScanDlg::OnBnClickedMainLoadImgBtn ( )
 	this->loadImage ( );
 
 	// 원 그리기
-	this->drawImage ( false , TRUE );
+	//this->drawImage ( false , TRUE );
 
-
+	this->drawCircle ( );
 
 }
 
@@ -225,11 +243,57 @@ void CMyDbScanDlg::drawImage ( bool bProcess , BOOL bErase )
 }
 
 
+void CMyDbScanDlg::drawCircle ( )
+{
+	// RAW 이미지가 없으면
+	if ( m_matList[ _RAW ].empty ( ) )
+	{
+		return;
+	}
+
+	// 이미지 복사
+	m_matList[ _RAW ].copyTo ( m_matList[ _RESULT ] );
+
+	int iHeight = m_matList[ _RESULT ].rows;
+	int iWidth = m_matList[ _RESULT ].cols;
+
+	// 원 그리기
+	int iX = static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_X_STATIC ) ) * iWidth / 1000;
+	int iY = static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_Y_STATIC ) ) * iHeight / 1000;
+	int iR = static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_R_STATIC ) ) * iHeight / 1000;
+	
+	cv::circle ( m_matList[ _RESULT ] , cv::Point ( iX , iY ) , iR , cv::Scalar ( 0 , 255 , 0 ) , 5 );
+
+	// 이미지 보여주기
+	m_imgStaticShow.bridgeImage ( &m_matList[ _RESULT ] );
+	m_imgStaticShow.Invalidate ( FALSE );
+}
+
+
 void CMyDbScanDlg::OnHScroll ( UINT nSBCode , UINT nPos , CScrollBar* pScrollBar )
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
 
-	if ( pScrollBar->GetSafeHwnd ( ) == this->GetDlgItem ( IDC_MAIN_EPS_SLIDER )->GetSafeHwnd ( ) )
+
+	if ( pScrollBar->GetSafeHwnd ( ) == this->GetDlgItem ( IDC_MAIN_CIRCLE_X_SLIDER )->GetSafeHwnd ( ) )
+	{
+		int iValue = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_X_SLIDER ) )->GetPos ( );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_X_STATIC , iValue );
+		this->drawCircle ( );
+	}
+	else if ( pScrollBar->GetSafeHwnd ( ) == this->GetDlgItem ( IDC_MAIN_CIRCLE_Y_SLIDER )->GetSafeHwnd ( ) )
+	{
+		int iValue = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_Y_SLIDER ) )->GetPos ( );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_Y_STATIC , iValue );
+		this->drawCircle ( );
+	}
+	else if ( pScrollBar->GetSafeHwnd ( ) == this->GetDlgItem ( IDC_MAIN_CIRCLE_R_SLIDER )->GetSafeHwnd ( ) )
+	{
+		int iValue = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_CIRCLE_R_SLIDER ) )->GetPos ( );
+		this->SetDlgItemInt ( IDC_MAIN_CIRCLE_R_STATIC , iValue );
+		this->drawCircle ( );
+	}
+	else if ( pScrollBar->GetSafeHwnd ( ) == this->GetDlgItem ( IDC_MAIN_EPS_SLIDER )->GetSafeHwnd ( ) )
 	{
 		int iValue = static_cast< CSliderCtrl* >( this->GetDlgItem ( IDC_MAIN_EPS_SLIDER ) )->GetPos ( );
 		this->SetDlgItemInt ( IDC_MAIN_EPS_STATIC , iValue );
@@ -254,82 +318,120 @@ void CMyDbScanDlg::OnHScroll ( UINT nSBCode , UINT nPos , CScrollBar* pScrollBar
 }
 
 
+//void CMyDbScanDlg::OnBnClickedMainDoBtn ( )
+//{
+//	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+//
+//	Dbscan dbscan (
+//		static_cast< double >( this->GetDlgItemInt ( IDC_MAIN_EPS_STATIC ) ) ,
+//		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC ) )
+//	);
+//
+//	// 데이터 준비
+//	cv::Mat matData;
+//	std::vector<int> vecLabels;
+//
+//
+//	MyUtils::MyCsv csv;
+//	std::vector < std::vector < std::string >> vecData;
+//	csv.load ( "./data.csv" , vecData );
+//
+//
+//	matData = cv::Mat ( static_cast< int >( vecData.size ( ) - 1 ) , 2 , CV_64F );
+//	for ( size_t i = 1; i < vecData.size ( ); ++i )
+//	{
+//		matData.at<double> ( static_cast< int >( i - 1 ) , 0 ) = std::stod ( vecData[ i ][ 0 ] );
+//		matData.at<double> ( static_cast< int >( i - 1 ) , 1 ) = std::stod ( vecData[ i ][ 1 ] );
+//	}
+//
+//
+//
+//	// matData 0 ~ 100 사이로 정규화
+//	cv::Mat matDataNorm;
+//	//cv::normalize ( matData , matDataNorm , 0.0 , 100.0 , cv::NORM_MINMAX );
+//
+//	matDataNorm.create ( matData.rows , matData.cols , matData.type ( ) );
+//
+//	for ( int c = 0; c < matData.cols; ++c )
+//	{
+//		cv::Mat col = matData.col ( c );
+//		cv::Mat colNorm = matDataNorm.col ( c );
+//		cv::normalize ( col , colNorm , 0.0 , 99.0 , cv::NORM_MINMAX );
+//	}
+//
+//	// matDataNorm 을 int 형으로 변환
+//	matDataNorm.convertTo ( matDataNorm , CV_32S );
+//
+//
+//
+//
+//	// 클러스터링 수행
+//	dbscan.fit ( matDataNorm , vecLabels );
+//
+//
+//	m_matList[ _SCATTER ] = cv::Mat ( 100 , 100 , CV_8UC3 , cv::Scalar ( 255 , 255 , 255 ) );
+//
+//	// 결과 그리기
+//	for ( int i = 0; i < matDataNorm.rows; ++i )
+//	{
+//		int x = matDataNorm.at<int> ( i , 0 );
+//		int y = matDataNorm.at<int> ( i , 1 );
+//		int label = vecLabels[ i ];
+//
+//		cv::Scalar color;
+//		if ( label == 0 )
+//			color = cv::Scalar ( 255 , 0 , 0 ); // 클러스터 0 : 파란색
+//		else if ( label == 1 )
+//			color = cv::Scalar ( 0 , 255 , 0 ); // 클러스터 1 : 초록색
+//		else if ( label == 2 )
+//			color = cv::Scalar ( 0 , 0 , 255 ); // 클러스터 2 : 빨간색
+//		else
+//			color = cv::Scalar ( 0 , 0 , 0 );   // 노이즈 : 검은색
+//
+//		// 점 그리기
+//		cv::circle ( m_matList[ _SCATTER ] , cv::Point ( x , y ) , 0 , color , -1 );
+//	}
+//
+//	m_imgStaticScatter.bridgeImage ( &m_matList[ _SCATTER ] );
+//	m_imgStaticScatter.Invalidate ( TRUE );
+//}
+
+
+
 void CMyDbScanDlg::OnBnClickedMainDoBtn ( )
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
-	Dbscan dbscan (
-		static_cast< double >( this->GetDlgItemInt ( IDC_MAIN_EPS_STATIC ) ) ,
-		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC ) )
+	// RAW 이미지가 없으면
+	if ( m_matList[ _RAW ].empty ( ) )
+	{
+		return;
+	}
+
+	// 원 정보 계산
+	int iHeight = m_matList[ _RESULT ].rows;
+	int iWidth = m_matList[ _RESULT ].cols;
+	cv::Vec3i circle = cv::Vec3i (
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_X_STATIC ) ) * iWidth / 1000,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_Y_STATIC ) ) * iHeight / 1000,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_CIRCLE_R_STATIC ) ) * iHeight / 1000
 	);
 
-	// 데이터 준비
-	cv::Mat matData;
-	std::vector<int> vecLabels;
+	// 이미지 처리
+	ImageProcess imgProc( 
+		circle ,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_EPS_STATIC ) ) ,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_MIN_SAMPLES_STATIC ) ) ,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_HSV_S_THRESH_STATIC ) ) ,
+		static_cast< int >( this->GetDlgItemInt ( IDC_MAIN_HSV_V_THRESH_STATIC ) )
+	);
+
+	imgProc.process ( m_matList[ _RAW ] , m_matList[ _RESULT ] , m_matList[ _SCATTER ] );
 
 
-	MyUtils::MyCsv csv;
-	std::vector < std::vector < std::string >> vecData;
-	csv.load ( "./data.csv" , vecData );
-
-
-	matData = cv::Mat ( static_cast< int >( vecData.size ( ) - 1 ) , 2 , CV_64F );
-	for ( size_t i = 1; i < vecData.size ( ); ++i )
-	{
-		matData.at<double> ( static_cast< int >( i - 1 ) , 0 ) = std::stod ( vecData[ i ][ 0 ] );
-		matData.at<double> ( static_cast< int >( i - 1 ) , 1 ) = std::stod ( vecData[ i ][ 1 ] );
-	}
-
-
-
-	// matData 0 ~ 100 사이로 정규화
-	cv::Mat matDataNorm;
-	//cv::normalize ( matData , matDataNorm , 0.0 , 100.0 , cv::NORM_MINMAX );
-
-	matDataNorm.create ( matData.rows , matData.cols , matData.type ( ) );
-
-	for ( int c = 0; c < matData.cols; ++c )
-	{
-		cv::Mat col = matData.col ( c );
-		cv::Mat colNorm = matDataNorm.col ( c );
-		cv::normalize ( col , colNorm , 0.0 , 99.0 , cv::NORM_MINMAX );
-	}
-
-	// matDataNorm 을 int 형으로 변환
-	matDataNorm.convertTo ( matDataNorm , CV_32S );
-
-
-
-
-	// 클러스터링 수행
-	dbscan.fit ( matDataNorm , vecLabels );
-
-
-	m_matList[ _SCATTER ] = cv::Mat ( 100 , 100 , CV_8UC3 , cv::Scalar ( 255 , 255 , 255 ) );
-
-	// 결과 그리기
-	for ( int i = 0; i < matDataNorm.rows; ++i )
-	{
-		int x = matDataNorm.at<int> ( i , 0 );
-		int y = matDataNorm.at<int> ( i , 1 );
-		int label = vecLabels[ i ];
-
-		cv::Scalar color;
-		if ( label == 0 )
-			color = cv::Scalar ( 255 , 0 , 0 ); // 클러스터 0 : 파란색
-		else if ( label == 1 )
-			color = cv::Scalar ( 0 , 255 , 0 ); // 클러스터 1 : 초록색
-		else if ( label == 2 )
-			color = cv::Scalar ( 0 , 0 , 255 ); // 클러스터 2 : 빨간색
-		else
-			color = cv::Scalar ( 0 , 0 , 0 );   // 노이즈 : 검은색
-
-		// 점 그리기
-		cv::circle ( m_matList[ _SCATTER ] , cv::Point ( x , y ) , 0 , color , -1 );
-	}
-
+	// 이미지 보여주기
+	m_imgStaticShow.bridgeImage ( &m_matList[ _RESULT ] );
+	m_imgStaticShow.Invalidate ( TRUE );
 	m_imgStaticScatter.bridgeImage ( &m_matList[ _SCATTER ] );
 	m_imgStaticScatter.Invalidate ( TRUE );
-
-
 }

@@ -6,7 +6,7 @@
 // vecLabels : (N, )
 void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 {
-	//CV_Assert ( matData.type ( ) == CV_32F || matData.type ( ) == CV_64F );
+	CV_Assert ( matData.type ( ) == CV_32F || matData.type ( ) == CV_64F );
 
 	// 라벨 초기화
 	vecLabels.resize ( matData.rows , -1 ); // -1: noise
@@ -60,7 +60,8 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 		}
 
 		// 클러스터 집합 크기
-		int iClusterSize = 0;
+		//int iClusterSize = 0;
+		std::set<int> setClusterPts;
 
 		// 새로운 클러스터 시작
 		queueIdx.push ( iNextIdx );
@@ -117,11 +118,18 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 			std::vector<int> vecNeighbors;
 			for ( int idx : setCandidate )
 			{
-				// 유클리드 거리 계산
-				double dDist = 0.0;
+				// 현재 포인트와 후보 포인트
 				cv::Mat matPtCurrent = matData.row ( iCurrentIdx );
 				cv::Mat matPtCandidate = matData.row ( idx );
-				dDist = cv::norm ( matPtCurrent - matPtCandidate , cv::NORM_L2 );
+
+				// 실수형 변환
+				//matPtCurrent.convertTo ( matPtCurrent , CV_64F );
+				//matPtCandidate.convertTo ( matPtCandidate , CV_64F );
+				//CV_Assert ( matPtCurrent.type ( ) == CV_32F || matPtCurrent.type ( ) == CV_64F );
+				//CV_Assert ( matPtCandidate.type ( ) == CV_32F || matPtCandidate.type ( ) == CV_64F );
+
+				// 거리 계산
+				double dDist = cv::norm ( matPtCurrent - matPtCandidate , cv::NORM_L2 );
 				if ( dDist <= m_eps )
 					vecNeighbors.push_back ( idx );
 			}
@@ -129,25 +137,44 @@ void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 			// 충분한 이웃이 있는지 확인
 			if ( vecNeighbors.size ( ) >= m_minPts )
 			{
+				//std::cout << "Cluster ID: " << iClusterId << " , CurrentIdx: " << iCurrentIdx << std::endl;
 				// 클러스터 라벨링
 				for ( int neighborIdx : vecNeighbors )
 				{
-					if ( vecLabels[ neighborIdx ] == -1 )
+					setClusterPts.insert ( neighborIdx );
+
+					//std::cout << neighborIdx;
+
+					if ( vecLabels[ neighborIdx ] != -1 )
 					{
-						vecLabels[ neighborIdx ] = iClusterId;
-						++iClusterSize;
-						if ( neighborIdx != iCurrentIdx )
-							queueIdx.push ( neighborIdx ); // 새로운 포인트 추가
+						//std::cout << " ";
+						continue;
 					}
+
+					//std::cout << "-";
+					vecLabels[ neighborIdx ] = iClusterId;
+					//++iClusterSize;
+					//if ( neighborIdx > iCurrentIdx )
+					//{
+					//	queueIdx.push ( neighborIdx ); // 새로운 포인트 추가
+					//	//std::cout << "q";
+					//}
+					queueIdx.push ( neighborIdx ); // 새로운 포인트 추가
+					
+					//std::cout << " ";
 				}
+				//std::cout << std::endl;
 			}
 
 
 		} // while ( queueIdx.empty ( ) == false )
 
 		// 다음 클러스터로 이동
-		if ( iClusterSize >= m_minPts )
+		if ( setClusterPts.size ( ) >= m_minPts )
 			++iClusterId;
+
+
+		//std::cout << std::endl;
 
 		// 다음 포인트
 		++iNextIdx;

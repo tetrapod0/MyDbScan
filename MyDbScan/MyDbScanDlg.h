@@ -12,7 +12,7 @@
 
 #include "DBSCAN.h"
 #include "MyUtils/MyCsv.hpp"
-
+#include "ImageProcess.h"
 
 
 // CMyDbScanDlg 대화 상자
@@ -51,6 +51,7 @@ private:
 
 	void loadImage ( );
 	void drawImage ( bool bProcess , BOOL bErase = TRUE );
+	void drawCircle ( );
 
 
 

@@ -16,6 +16,13 @@
 #define IDC_MAIN_MIN_SAMPLES_STATIC     1009
 #define IDC_MAIN_HSV_S_THRESH_STATIC    1010
 #define IDC_MAIN_HSV_V_THRESH_STATIC    1011
+#define IDC_SLIDER1                     1012
+#define IDC_MAIN_CIRCLE_R_SLIDER        1012
+#define IDC_MAIN_CIRCLE_Y_SLIDER        1013
+#define IDC_MAIN_CIRCLE_X_SLIDER        1014
+#define IDC_MAIN_CIRCLE_X_STATIC        1015
+#define IDC_MAIN_CIRCLE_Y_STATIC        1016
+#define IDC_MAIN_CIRCLE_R_STATIC        1017
 
 // Next default values for new objects
 // 
@@ -23,7 +30,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

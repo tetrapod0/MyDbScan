@@ -2,11 +2,13 @@
 
 #include <vector>
 #include "opencv.hpp"
+#include "DBSCAN.h"
 
 
 class ImageProcess
 {
 private:
+	cv::Vec3i m_circle; // x, y, r
 	int m_iEps;
 	int m_iMinSamples;
 	int m_iHsvSThresh;
@@ -14,9 +16,8 @@ private:
 
 public:
 	ImageProcess ( ) = delete;
-	ImageProcess ( int iEps , int iMinSamples , int iHsvSThresh , int iHsvVThresh ) :
-		m_iEps ( iEps ) , m_iMinSamples ( iMinSamples ) , m_iHsvSThresh ( iHsvSThresh ) , m_iHsvVThresh ( iHsvVThresh ) { }
+	ImageProcess ( const cv::Vec3i& circle , int iEps , int iMinSamples , int iHsvSThresh , int iHsvVThresh );
 	~ImageProcess ( ) = default;
 
-
+	void process ( const cv::Mat& matRaw , cv::Mat& matResult , cv::Mat& matScatter );
 };
