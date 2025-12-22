@@ -6,10 +6,10 @@
 // vecLabels : (N, )
 void Dbscan::fit ( const cv::Mat& matData , std::vector<int>& vecLabels )
 {
-	CV_Assert ( matData.type ( ) == CV_32F || matData.type ( ) == CV_64F );
+	CV_Assert ( matData.type ( ) == CV_64F );
 
 	// 라벨 초기화
-	vecLabels.resize ( matData.rows , -1 ); // -1: noise
+	vecLabels.assign ( matData.rows , -1 ); // -1: noise
 
 	int iNumPoints = matData.rows;
 	int iDim = matData.cols;
